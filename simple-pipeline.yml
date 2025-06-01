@@ -1,0 +1,85 @@
+name: My First Pipeline
+
+# When should this pipeline run?
+on:
+  # Run when code is pushed to the main branch
+  push:
+    branches: [ main ]
+  # Also run when someone creates a pull request
+  pull_request:
+    branches: [ main ]
+
+# What jobs should run?
+jobs:
+  # Job 1: Test our code
+  test:
+    # Use GitHub's free Ubuntu server
+    runs-on: ubuntu-latest
+    
+    steps:
+    # Step 1: Get our code from the repository
+    - name: Download our code
+      uses: actions/checkout@v4
+    
+    # Step 2: Set up Node.js (if you have a JavaScript project)
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    
+    # Step 3: Install dependencies (if you have a package.json file)
+    - name: Install packages
+      run: npm install
+      # Skip this step if package.json doesn't exist
+      continue-on-error: true
+    
+    # Step 4: Run tests (if you have any)
+    - name: Run tests
+      run: npm test
+      # Skip this step if no tests exist
+      continue-on-error: true
+    
+    # Step 5: Just say hello (this always works!)
+    - name: Say hello
+      run: |
+        echo "Hello from GitHub Actions!"
+        echo "Today is $(date)"
+        echo "Pipeline completed successfully! 🎉"
+
+  # Job 2: Check code quality (runs at the same time as test job)
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Download our code
+      uses: actions/checkout@v4
+    
+    - name: Check for common issues
+      run: |
+        echo "Checking code quality..."
+        # Count lines of code
+        echo "Lines of code: $(find . -name '*.js' -o -name '*.py' -o -name '*.html' | xargs wc -l 2>/dev/null | tail -1 || echo '0')"
+        # List all files
+        echo "Files in repository:"
+        ls -la
+        echo "Code quality check complete! ✅"
+
+  # Job 3: Deploy (only runs after test and lint succeed)
+  deploy:
+    # This job needs the other jobs to finish successfully first
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    
+    # Only run on main branch (not on pull requests)
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Download our code
+      uses: actions/checkout@v4
+    
+    - name: Simulate deployment
+      run: |
+        echo "🚀 Deploying to production..."
+        sleep 3
+        echo "✅ Deployment successful!"
+        echo "Your app is now live! (This is just a simulation)"
